@@ -1,6 +1,6 @@
 # Takarabako
 
-Meaning **treasure chest** in japanese, takarabako will provide a frontend that makes it easy to capture and analyse your private financial resources.
+Meaning **treasure chest** in japanese, `takarabako` will provide a frontend that makes it easy to capture and analyse your private financial resources.
 
 ## Usage
 *Not yet implemented!*
