@@ -60,8 +60,33 @@
                             (reduce +))]
             (- income outcome))})
 
+(defmulti mutate om/dispatch)
+
+(defmethod mutate 'finances/add
+  [{:keys [state] :as env} key params]
+  {:value [:finances/collection]
+   :action
+   #(swap! state update-in [:finances/collection] conj params)})
 ;;---------------------------------------------------------------------------------------------------- 
 ;; COMPONENTS
+
+(defn create-table [collection]
+  (dom/table nil
+             (dom/thead
+              nil
+              (dom/tr nil
+                      (dom/th nil "Date")
+                      (dom/th nil "Company")
+                      (dom/th nil "Value")))
+             (apply dom/tbody
+                    nil
+                    (map
+                     (fn [{:keys [company date value]}]
+                       (dom/tr nil
+                               (dom/td nil date)
+                               (dom/td nil company)
+                               (dom/td nil value)))
+                     collection))))
 
 (defui FinanceList
   static om/IQueryParams
@@ -72,30 +97,52 @@
     '[(:finances/net nil) (:finances/collection {:type ?type}) ])
   Object
   (render [this]
-    (let [{:keys [finances/collection finances/net]} (om/props this)]
+    (let [{:keys [finances/collection finances/net] :as state} (om/props this)
+          {:keys [company date value] :as local} (om/get-state this)]
       (dom/div nil
-               (dom/table nil
-                          (dom/thead
-                           nil
-                           (dom/tr nil
-                                   (dom/th nil "Date")
-                                   (dom/th nil "Company")
-                                   (dom/th nil "Value")))
-                          (apply dom/tbody
-                                 nil
-                                 (map
-                                  (fn [{:keys [company date value]}]
-                                    (dom/tr nil
-                                            (dom/td nil date)
-                                            (dom/td nil company)
-                                            (dom/td nil value)))
-                                  collection)))
-               (dom/h1 nil "Net value: " net)))))
+               (dom/div nil
+                        (dom/input #js {:type :text
+                                        :placeholder "Company"
+                                        :value company
+                                        :onChange
+                                        (fn [e]
+                                          (om/set-state!
+                                           this
+                                           (assoc local :company
+                                                  (.. e -target -value))))})
+                        (dom/input #js {:type :date
+                                        :placeholder "Date"
+                                        :value date
+                                        :onChange
+                                        (fn [e]
+                                          (om/set-state!
+                                           this
+                                           (assoc local :date
+                                                  (.. e -target -value))))})
+                        (dom/input #js {:type :number
+                                        :placeholder "Value"
+                                        :value value
+                                        :onChange
+                                        (fn [e]
+                                          (om/set-state!
+                                           this
+                                           (assoc local :value
+                                                  (.. e -target -value))))})
+                        (dom/button #js {:onClick
+                                         (fn [e]
+                                           (let [new-value (-> local
+                                                               (assoc :type :outcome)
+                                                               (update :value js/parseFloat))]
+                                             (om/transact! this `[(finances/add ~new-value)])
+                                             (om/set-state! this {:company "" :date "" :value ""})))}
+                                    "Add"))
+               (dom/h1 nil "Net value: " net)
+               (create-table collection)))))
 
 (def reconciler
   (om/reconciler
    {:state app-state
-    :parser (om/parser {:read read})}))
+    :parser (om/parser {:read read :mutate mutate})}))
 
 (om/add-root!
  reconciler
