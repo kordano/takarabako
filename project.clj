@@ -8,6 +8,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [http-kit "2.1.18"]
                  [compojure "1.4.0"]
+                 [com.datomic/datomic-free "0.9.5327"]
                  [org.omcljs/om "1.0.0-alpha14"]
                  [kioo "0.4.1"]
                  [jarohen/chord "0.6.0"]

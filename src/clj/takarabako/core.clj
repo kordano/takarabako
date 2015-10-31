@@ -4,13 +4,43 @@
             [compojure.core :refer [defroutes GET]]
             [clojure.java.io :as io]
             [org.httpkit.server :refer [send! with-channel on-close on-receive run-server]]
-            [taoensso.carmine :as car :refer (wcar)]
-            [clojure.core.async :refer [go <!!]]))
+            [datomic.api :as d]
+            [clojure.java.io :as io]
+            [clojure.core.async :refer [go <!!]])
+  (:import datomic.Util))
+
+;;--------------------------------------------------------------------------------
+;; Database
+
+(def db-uri-base "datomic:free://0.0.0.0:4334")
+
+(defn scratch-conn
+  "Create a connection to an anonymous, in-memory database."
+  []
+  (let [uri (str "datomic:mem://" (d/squuid))]
+    (d/delete-database uri)
+    (d/create-database uri)
+    (d/connect uri)))
+
+
+(defn persistent-conn
+  "Create connection to persistent datomic database"
+  []
+  (let [uri (str db-uri-base "/haushalt")]
+    (d/create-database uri)
+    (d/connect uri)))
+
+
+(defn initialize-db [conn path]
+  (doseq [txd (-> path io/resource io/reader Util/readAll)]
+    (d/transact conn txd))
+  :done)
+
+
+;;--------------------------------------------------------------------------------
+;; Server
 
 (defn now [] (new java.util.Date))
-
-(defmacro wcar* [& body] `(car/wcar {:pool {} :spec {:host "127.0.0.1" :port 6379}} ~@body))
-
 
 (defn create-socket-handler [state]
   (fn [request]
@@ -44,6 +74,12 @@
 (comment
 
   (def state (start-server 8090))
+ 
+  (def conn (scratch-conn))
+
+  (def db (d/db conn))
   
+  (initialize-db conn "schema.edn")
+ 
   )
 
