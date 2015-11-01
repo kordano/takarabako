@@ -67,7 +67,7 @@
     {:type :outcome})
   static om/IQuery
   (query [this]
-    '[(:finances/net nil) (:finances/collection {:type ?type}) ])
+    '[(:finances/net nil) (:finances/collection {:type ?type})])
   Object
   (componentDidMount [this] (io/open-channel this))
   (render [this]
@@ -76,4 +76,3 @@
                (create-input this)
                (dom/h1 nil "Net value: " net)
                (create-table collection)))))
-
