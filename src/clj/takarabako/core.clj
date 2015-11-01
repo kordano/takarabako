@@ -2,53 +2,55 @@
   (:gen-class :main true)
   (:require [compojure.route :as route]
             [compojure.core :refer [defroutes GET]]
-            [clojure.java.io :as io]
             [org.httpkit.server :refer [send! with-channel on-close on-receive run-server]]
-            [datomic.api :as d]
+            [konserve.memory :refer [new-mem-store]]
+            [konserve.core :as k]
             [clojure.java.io :as io]
-            [clojure.core.async :refer [go <!!]])
-  (:import datomic.Util))
+            [clojure.core.async :refer [go <!!]]))
 
 ;;--------------------------------------------------------------------------------
 ;; Database
+(def local-store (<!! (new-mem-store) #_(new-fs-store "./store")))
 
-(def db-uri-base "datomic:free://0.0.0.0:4334")
-
-(defn scratch-conn
-  "Create a connection to an anonymous, in-memory database."
-  []
-  (let [uri (str "datomic:mem://" (d/squuid))]
-    (d/delete-database uri)
-    (d/create-database uri)
-    (d/connect uri)))
-
-
-(defn persistent-conn
-  "Create connection to persistent datomic database"
-  []
-  (let [uri (str db-uri-base "/haushalt")]
-    (d/create-database uri)
-    (d/connect uri)))
-
-
-(defn initialize-db [conn path]
-  (doseq [txd (-> path io/resource io/reader Util/readAll)]
-    (d/transact conn txd))
-  :done)
-
+(defn initialize-store [store]
+  (<!! (k/assoc-in store
+                   [:finances/collection]
+                   [{:type :outcome
+                     :company "Rewe"
+                     :date "2015-10-01"
+                     :value 10.02}
+                    {:type :outcome
+                     :company "Aldi"
+                     :date "2014-10-02"
+                     :value 5.67}
+                    {:type :income
+                     :company "URZ"
+                     :date "2015-10-01"
+                     :value 500.00}
+                    {:type :outcome
+                     :company "Studentenwerk"
+                     :date "2015-10-10"
+                     :value 25.00}])))
 
 ;;--------------------------------------------------------------------------------
 ;; Server
 
 (defn now [] (new java.util.Date))
 
+(defn dispatch [{:keys [type data meta] :as action}]
+  (case type
+    :init (assoc action :data (<!! (k/get-in local-store [:finances/collection])))
+    :unrelated))
+
 (defn create-socket-handler [state]
   (fn [request]
     (with-channel request channel
       (on-close channel (fn [status]))
       (on-receive channel (fn [data]
-                            (let [action (read-string data)]
-                              (println action)))))))
+                            (let [msg (read-string data)]
+                              (println msg)
+                              (send! channel (str (dispatch msg)))))))))
+
 (defn create-routes
   "Create routes from server state"
   [state]
@@ -74,12 +76,12 @@
 (comment
 
   (def state (start-server 8090))
- 
-  (def conn (scratch-conn))
 
-  (def db (d/db conn))
+
+  ((:server @state))
+
   
-  (initialize-db conn "schema.edn")
- 
+  (initialize-store local-store)
+
   )
 
