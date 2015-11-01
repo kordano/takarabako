@@ -10,29 +10,29 @@
               nil
               (dom/tr nil
                       (dom/th nil "Date")
-                      (dom/th nil "Company")
+                      (dom/th nil "Category")
                       (dom/th nil "Value")))
              (apply dom/tbody
                     nil
                     (map
-                     (fn [{:keys [company date value]}]
+                     (fn [{:keys [category date value]}]
                        (dom/tr nil
                                (dom/td nil date)
-                               (dom/td nil company)
+                               (dom/td nil category)
                                (dom/td nil value)))
                      collection))))
 
 (defn create-input [component]
-  (let [{:keys [company date value] :as local} (om/get-state component)]
+  (let [{:keys [category date value] :as local} (om/get-state component)]
     (dom/div nil
              (dom/input #js {:type :text
-                             :placeholder "Company"
-                             :value company
+                             :placeholder "Category"
+                             :value category
                              :onChange
                              (fn [e]
                                (om/set-state!
                                 component
-                                (assoc local :company
+                                (assoc local :category
                                        (.. e -target -value))))})
              (dom/input #js {:type :date
                              :placeholder "Date"
@@ -58,7 +58,7 @@
                                                     (assoc :type :outcome)
                                                     (update :value js/parseFloat))]
                                   (om/transact! component `[(finances/add ~new-value)])
-                                  (om/set-state! component {:company "" :date "" :value ""})))}
+                                  (om/set-state! component {:category "" :date "" :value ""})))}
                          "Add"))))
 
 (defui FinanceList

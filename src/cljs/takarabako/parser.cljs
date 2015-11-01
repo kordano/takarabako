@@ -1,5 +1,6 @@
 (ns takarabako.parser
-  (:require [om.next :as om]))
+  (:require [om.next :as om]
+            [takarabako.io :as io]))
 
 ;;--------------------------------------------------------------------------------
 ;; READS
@@ -41,11 +42,18 @@
 
 (defmulti mutate om/dispatch)
 
+(defmethod mutate 'input/ws
+  [{:keys [state] :as env} key {:keys [ws]}]
+  {:action
+   #(swap! state assoc-in [:input/ws] ws)})
+
 (defmethod mutate 'finances/add
   [{:keys [state] :as env} key params]
   {:value [:finances/collection]
    :action
-   #(swap! state update-in [:finances/collection] conj params)})
+   #(do
+      (io/send! state {:type :add :data params :meta nil})
+      (swap! state update-in [:finances/collection] conj params))})
 
 (defmethod mutate 'finances/set
   [{:keys [state] :as env} key {:keys [data]}]

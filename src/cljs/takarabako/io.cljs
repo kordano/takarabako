@@ -8,7 +8,7 @@
 
 (defn open-channel
   "Opens channel to server and dispatches incoming messages "
-  [app]
+  [component]
   (go
     (let [uri (goog.Uri. js/location.href)
           ssl? (= (.getScheme uri) "https")
@@ -21,13 +21,19 @@
       (if-not error
         (do
           (println "Channel opened!")
+          (om/transact! component `[(input/ws {:ws ~ws-channel})])
           (>! ws-channel {:type :init :data nil :meta nil})
           (go-loop [{{:keys [type meta data] :as message} :message err :error} (<! ws-channel)]
             (if-not err
               (when message
                 (case type
-                  :init (om/transact! app `[(finances/set {:data ~data})])
+                  :init (om/transact! component `[(finances/set {:data ~data})])
+                  :add (println "Transaction complete!")
                   :unrelated)
                 (recur (<! ws-channel)))
               (println "Channel error on response"))))
         (println "Channel error on open" error)))))
+
+(defn send! [state data]
+  (let [{:keys [input/ws]} @state]
+    (go (>! ws data))))

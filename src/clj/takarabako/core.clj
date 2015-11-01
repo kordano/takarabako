@@ -16,19 +16,19 @@
   (<!! (k/assoc-in store
                    [:finances/collection]
                    [{:type :outcome
-                     :company "Rewe"
+                     :category "Rewe"
                      :date "2015-10-01"
                      :value 10.02}
                     {:type :outcome
-                     :company "Aldi"
+                     :category "Aldi"
                      :date "2014-10-02"
                      :value 5.67}
                     {:type :income
-                     :company "URZ"
+                     :category "URZ"
                      :date "2015-10-01"
                      :value 500.00}
                     {:type :outcome
-                     :company "Studentenwerk"
+                     :category "Studentenwerk"
                      :date "2015-10-10"
                      :value 25.00}])))
 
@@ -40,6 +40,7 @@
 (defn dispatch [{:keys [type data meta] :as action}]
   (case type
     :init (assoc action :data (<!! (k/get-in local-store [:finances/collection])))
+    :add (assoc action :data (<!! (k/update-in local-store [:finances/collection] #(conj % data))))
     :unrelated))
 
 (defn create-socket-handler [state]
@@ -82,6 +83,7 @@
 
   
   (initialize-store local-store)
-
+  (<!! (k/get-in local-store [:finances/collection]))
+  
   )
 
