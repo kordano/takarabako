@@ -3,14 +3,13 @@
   (:require [compojure.route :as route]
             [compojure.core :refer [defroutes GET]]
             [org.httpkit.server :refer [send! with-channel on-close on-receive run-server]]
-            [konserve.memory :refer [new-mem-store]]
             [konserve.core :as k]
+            [konserve.memory :refer [new-mem-store]]
             [clojure.java.io :as io]
             [clojure.core.async :refer [go <!!]]))
 
 ;;--------------------------------------------------------------------------------
 ;; Database
-(def local-store (<!! (new-mem-store) #_(new-fs-store "./store")))
 
 (defn initialize-store [store]
   (<!! (k/assoc-in store
@@ -37,20 +36,23 @@
 
 (defn now [] (new java.util.Date))
 
-(defn dispatch [{:keys [type data meta] :as action}]
+(defn dispatch [store {:keys [type data meta] :as action}]
   (case type
-    :init (assoc action :data (<!! (k/get-in local-store [:finances/collection])))
-    :add (assoc action :data (<!! (k/update-in local-store [:finances/collection] #(conj % data))))
+    :init (assoc action :data (<!! (k/get-in store [:finances/collection])))
+    :add (assoc action :data (<!! (k/update-in store [:finances/collection] #(conj % data))))
     :unrelated))
 
 (defn create-socket-handler [state]
   (fn [request]
     (with-channel request channel
       (on-close channel (fn [status]))
-      (on-receive channel (fn [data]
-                            (let [msg (read-string data)]
-                              (println msg)
-                              (send! channel (str (dispatch msg)))))))))
+      (on-receive channel
+                  (fn [data]
+                    (let []
+                      (send! channel
+                             (str (dispatch
+                                   (:store @state)
+                                   (read-string data))))))))))
 
 (defn create-routes
   "Create routes from server state"
@@ -63,27 +65,32 @@
 
 (defn start-server
   "startAllServices™"
-  [port]
-  (let [state (atom {:server nil})]
+  [port store-path]
+  (let [state (atom {:server nil})
+        store (<!! (new-mem-store)) #_(<!! (new-fs-store store-path))]
     (create-routes @state)
+    (initialize-store store)
     (swap! state assoc :server (run-server #'all-routes {:port port}))
+    (swap! state assoc :store store )
     state))
 
 (defn -main [& args]
-  (let [port (second args)]
-    (start-server (if port (Integer/parseInt port) 8090))
+  (let [port (second args)
+        store (get args 3)]
+    (start-server (if port (Integer/parseInt port) 8090) store)
     (println "Server startet at localhost:8080")))
 
 (comment
 
-  (def state (start-server 8090))
-
-
-  ((:server @state))
+  (def state (start-server 8090 nil))
 
   
-  (initialize-store local-store)
-  (<!! (k/get-in local-store [:finances/collection]))
+  ((:server @state))
+
+  (initialize-store (:store @state))
+  
+  (<!! (k/get-in (:store @state) [:finances/collection]))
+
   
   )
 
