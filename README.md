@@ -4,9 +4,10 @@ Meaning **treasure chest** in Japanese, `takarabako` aims to provide a frontend 
 
 ## Usage
 
-Start development environment:
+Development environment:
 
 ```Clojure
+lein run &
 lein figwheel dev
 ```
 
