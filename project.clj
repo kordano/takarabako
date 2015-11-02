@@ -11,11 +11,15 @@
                  [org.omcljs/om "1.0.0-alpha14"]
                  [io.replikativ/konserve "0.3.0-beta3"]
                  [com.cemerick/piggieback "0.2.1"]
-                 [org.clojure/tools.nrepl "0.2.11"]
+                 [org.clojure/tools.nrepl "0.2.12"]
                  [jarohen/chord "0.6.0"]]
   :source-paths ["src/cljs" "src/clj"]
+  :main takarabako.core
   :plugins [[lein-figwheel "0.4.1"]
+            [lein-sassy "1.0.7"]
             [lein-cljsbuild "1.1.0"]]
+  :sass {:src "resources/sass"
+         :dst "resources/public"}
   :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
   :figwheel {:nrepl-port 7888
              :css-dirs ["resources/public/css"]}

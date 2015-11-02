@@ -5,6 +5,7 @@
             [org.httpkit.server :refer [send! with-channel on-close on-receive run-server]]
             [konserve.core :as k]
             [konserve.memory :refer [new-mem-store]]
+            [konserve.filestore :refer [new-fs-store]]
             [clojure.java.io :as io]
             [clojure.core.async :refer [go <!!]]))
 
@@ -72,13 +73,13 @@
     state))
 
 (defn -main [& args]
-  (let [port (second args)]
-    (start-server (if port (Integer/parseInt port) 8090))
-    (println "Server startet at localhost:8090")))
+  (let [port (if (second args)(Integer/parseInt (second args)) 8090)]
+    (start-server port)
+    (println (str "Server startet at localhost:" port))))
 
 (comment
 
-  (def state (start-server 8090 nil))
+  (def state (start-server 8090))
   
   ((:server @state))
 

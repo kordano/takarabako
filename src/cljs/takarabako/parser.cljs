@@ -5,16 +5,13 @@
 ;;--------------------------------------------------------------------------------
 ;; READS
 
-(defmulti read (fn [env key params] key))
+(defmulti read om/dispatch)
 
-(defmethod read :default
-  [{:keys [state] :as env} key params]
-  (let [st @state]
-    (if-let [[_ value] (find st key)]
-      {:value value}
-      {:value :not-found})))
+(defmethod read :dashboard/collection
+  [{:keys [state] :as env} key {:keys [type]}]
+  {:value (:finances/collection @state)})
 
-(defmethod read :finances/collection
+(defmethod read :finances/selected
   [{:keys [state] :as env} key {:keys [type]}]
   {:value (filter #(= type (:type %)) (:finances/collection @state))})
 
@@ -57,5 +54,6 @@
 
 (defmethod mutate 'finances/set
   [{:keys [state] :as env} key {:keys [data]}]
-  {:action
+  {:value [:finances/collection]
+   :action
    #(swap! state assoc-in [:finances/collection] data)})

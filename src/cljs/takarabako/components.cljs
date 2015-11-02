@@ -61,18 +61,33 @@
                                   (om/set-state! component {:category "" :date "" :value ""})))}
                          "Add"))))
 
+
 (defui FinanceList
   static om/IQueryParams
   (params [this]
     {:type :outcome})
   static om/IQuery
   (query [this]
-    '[(:finances/net nil) (:finances/collection {:type ?type})])
+    '[(:finances/selected {:type ?type})])
+  Object
+  (render [this]
+    (let [{:keys [finances/selected finances/collection] :as props} (om/props this)]
+      (println props)
+      (dom/div nil
+               (create-input this)
+               (create-table selected)))))
+
+
+(def finance-list (om/factory FinanceList))
+
+(defui Dashboard
+  static om/IQuery
+  (query [this]
+    [{:dashboard/collection (om/get-query FinanceList)}])
   Object
   (componentDidMount [this] (io/open-channel this))
   (render [this]
-    (let [{:keys [finances/collection finances/net] :as props} (om/props this)]
+    (let [{:keys [finances/collection] :as props} (om/props this)]
       (dom/div nil
-               (create-input this)
-               (dom/h1 nil "Net value: " net)
-               (create-table collection)))))
+               (dom/h1 nil "Net value: " (count collection))
+               (finance-list collection)))))

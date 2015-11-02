@@ -1,6 +1,7 @@
 (ns takarabako.core
   (:require [goog.dom :as gdom]
-            [takarabako.components :refer [FinanceList]]
+            [takarabako.components :refer [Dashboard]]
+            [takarabako.io :as io]
             [takarabako.parser :refer [read mutate]]
             [om.next :as om]))
 
@@ -12,5 +13,5 @@
 
 (om/add-root!
  reconciler
- FinanceList
+ Dashboard
  (gdom/getElement "app"))
