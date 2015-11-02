@@ -31,15 +31,17 @@
                      :date "2015-10-10"
                      :value 25.00}])))
 
+(def local-store (<!! (new-mem-store)))
+
 ;;--------------------------------------------------------------------------------
 ;; Server
 
 (defn now [] (new java.util.Date))
 
-(defn dispatch [store {:keys [type data meta] :as action}]
+(defn dispatch [{:keys [type data meta] :as action}]
   (case type
-    :init (assoc action :data (<!! (k/get-in store [:finances/collection])))
-    :add (assoc action :data (<!! (k/update-in store [:finances/collection] #(conj % data))))
+    :init (assoc action :data (<!! (k/get-in local-store [:finances/collection])))
+    :add (assoc action :data (<!! (k/update-in local-store [:finances/collection] #(conj % data))))
     :unrelated))
 
 (defn create-socket-handler [state]
@@ -48,11 +50,8 @@
       (on-close channel (fn [status]))
       (on-receive channel
                   (fn [data]
-                    (let []
-                      (send! channel
-                             (str (dispatch
-                                   (:store @state)
-                                   (read-string data))))))))))
+                    (let [msg (read-string data)]
+                      (send! channel (str (dispatch msg)))))))))
 
 (defn create-routes
   "Create routes from server state"
@@ -65,25 +64,21 @@
 
 (defn start-server
   "startAllServices™"
-  [port store-path]
-  (let [state (atom {:server nil})
-        store (<!! (new-mem-store)) #_(<!! (new-fs-store store-path))]
+  [port]
+  (let [state (atom {:server nil})]
     (create-routes @state)
-    (initialize-store store)
+    (initialize-store local-store)
     (swap! state assoc :server (run-server #'all-routes {:port port}))
-    (swap! state assoc :store store )
     state))
 
 (defn -main [& args]
-  (let [port (second args)
-        store (get args 3)]
-    (start-server (if port (Integer/parseInt port) 8090) store)
-    (println "Server startet at localhost:8080")))
+  (let [port (second args)]
+    (start-server (if port (Integer/parseInt port) 8090))
+    (println "Server startet at localhost:8090")))
 
 (comment
 
   (def state (start-server 8090 nil))
-
   
   ((:server @state))
 
