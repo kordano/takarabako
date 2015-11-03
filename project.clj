@@ -8,6 +8,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [http-kit "2.1.18"]
                  [compojure "1.4.0"]
+                 [sablono "0.3.6"  :exclusions [cljsjs/react]]
                  [org.omcljs/om "1.0.0-alpha14"]
                  [io.replikativ/konserve "0.3.0-beta3"]
                  [com.cemerick/piggieback "0.2.1"]
@@ -22,7 +23,7 @@
          :dst "resources/public"}
   :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
   :figwheel {:nrepl-port 7888
-             :css-dirs ["resources/public/css"]}
+             :css-dirs ["resources/public"]}
   :clean-targets ^{:protect false} ["resources/public/js" "target" "out"]
   :cljsbuild {:builds
               {:dev

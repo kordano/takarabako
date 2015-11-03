@@ -1,93 +1,102 @@
 (ns takarabako.components
   (:require [goog.dom :as gdom]
             [om.dom :as dom]
+            [sablono.core :as html :refer-macros [html]]
             [takarabako.io :as io]
             [om.next :as om :refer-macros [defui]]))
 
-(defn create-table [collection]
-  (dom/table nil
-             (dom/thead
-              nil
-              (dom/tr nil
-                      (dom/th nil "Date")
-                      (dom/th nil "Category")
-                      (dom/th nil "Value")))
-             (apply dom/tbody
-                    nil
-                    (map
-                     (fn [{:keys [category date value]}]
-                       (dom/tr nil
-                               (dom/td nil date)
-                               (dom/td nil category)
-                               (dom/td nil value)))
-                     collection))))
+(defn create-input-field
+  "Create accout input field"
+  [component param value]
+  (let [title (name param)
+        local (om/get-state component)]
+    [:input {:placeholder title 
+             :value value
+             :onChange
+             (fn [e]
+               (om/set-state!
+                component
+                (assoc local param
+                       (.. e -target -value))))}]))
 
-(defn create-input [component]
-  (let [{:keys [category date value] :as local} (om/get-state component)]
-    (dom/div nil
-             (dom/input #js {:type :text
-                             :placeholder "Category"
-                             :value category
-                             :onChange
-                             (fn [e]
-                               (om/set-state!
-                                component
-                                (assoc local :category
-                                       (.. e -target -value))))})
-             (dom/input #js {:type :date
-                             :placeholder "Date"
-                             :value date
-                             :onChange
-                             (fn [e]
-                               (om/set-state!
-                                component
-                                (assoc local :date
-                                       (.. e -target -value))))})
-             (dom/input #js {:type :number
-                             :placeholder "Value"
-                             :value value
-                             :onChange
-                             (fn [e]
-                               (om/set-state!
-                                component
-                                (assoc local :value
-                                       (.. e -target -value))))})
-             (dom/button #js {:onClick
-                              (fn [e]
-                                (let [new-value (-> local
-                                                    (assoc :type :outcome)
-                                                    (update :value js/parseFloat))]
-                                  (om/transact! component `[(finances/add ~new-value)])
-                                  (om/set-state! component {:category "" :date "" :value ""})))}
-                         "Add"))))
+(defn create-account-input
+  "Create account input fields and add button"
+  [component]
+  (let [{:keys [category date value] :as local} (om/get-state component)
+        {:keys [type]} (om/get-params component)]
+    (html
+     [:div
+      (create-input-field component :category category)
+      (create-input-field component :date date)
+      (create-input-field component :value value)
+      [:button {:onClick
+                (fn [e]
+                  (let [new-value (-> local
+                                      (assoc :type type)
+                                      (update :value js/parseFloat))]
+                    (om/transact! component `[(finances/add ~new-value)])
+                    (om/set-state! component {:category "" :date "" :value ""})))}
+       "Add"]])))
 
 
-(defui FinanceList
+(defui Booking
+  static om/IQuery
+  (query [this]
+    [:category :date :value])
+  Object
+  (render [this]
+    (let [{:keys [category date value]} (om/props this)]
+      (html
+       [:tr [:td date] [:td category] [:td value]]))))
+
+(def booking (om/factory Booking))
+
+(defui BookingList
+  Object
+  (render [this]
+    (let [{:keys [finances/selected] :as props} (om/props this)]
+      (html
+       [:table
+        [:thead
+         [:tr [:th "Date"] [:th "Category"] [:th "Value"]]]
+        [:tbody (map booking selected)]]))))
+
+(def booking-list (om/factory BookingList))
+
+(defui NetValue
+  Object
+  (render [this]
+    (let [{:keys [finances/net] :as props} (om/props this)]
+      (html [:h2 (str "Net Value: " net)]))))
+
+(def netvalue (om/factory NetValue))
+
+(defn create-selector [component param]
+  (let [title (name param)]
+    [:div.selector-toggle
+     [:input
+      {:type "radio"
+       :id (str title "-selector")
+       :name :booking-selector
+       :value name
+       :onClick #(let [{:keys [type]} (om/get-params component)]
+                   (om/set-params! component {:type param}))}]
+     [:label {:for (str title "-selector")} title]]))
+
+(defui Dashboard
   static om/IQueryParams
   (params [this]
     {:type :outcome})
   static om/IQuery
   (query [this]
-    '[(:finances/selected {:type ?type})])
-  Object
-  (render [this]
-    (let [{:keys [finances/selected finances/collection] :as props} (om/props this)]
-      (println props)
-      (dom/div nil
-               (create-input this)
-               (create-table selected)))))
-
-
-(def finance-list (om/factory FinanceList))
-
-(defui Dashboard
-  static om/IQuery
-  (query [this]
-    [{:dashboard/collection (om/get-query FinanceList)}])
+    `[(:finances/selected {:type ?type}) :finances/net])
   Object
   (componentDidMount [this] (io/open-channel this))
   (render [this]
-    (let [{:keys [finances/collection] :as props} (om/props this)]
-      (dom/div nil
-               (dom/h1 nil "Net value: " (count collection))
-               (finance-list collection)))))
+    (println (-> this om/props))
+    (html
+     [:div.container
+      (create-account-input this)
+      (netvalue (om/props this))
+      (map (partial create-selector this) [:income :outcome])
+      (booking-list (om/props this))])))

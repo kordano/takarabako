@@ -7,6 +7,17 @@
 
 (defmulti read om/dispatch)
 
+(defmethod read :default
+  [{:keys [state] :as env} key params]
+  (println "READ:" key)
+  (if-let [[_ v] (find @state key)]
+    {:value v}
+    {:value []}))
+
+(defmethod read :dashboard/collection
+  [{:keys [state] :as env} key {:keys [type]}]
+  {:value (:finances/collection @state)})
+
 (defmethod read :dashboard/collection
   [{:keys [state] :as env} key {:keys [type]}]
   {:value (:finances/collection @state)})
@@ -23,7 +34,7 @@
                (reduce +))})
 
 (defmethod read :finances/net
-  [{:keys [state] :as env} key params]
+  [{:keys [state] :as env} key _]
   {:value (let [income (->> (:finances/collection @state)
                             (filter #(= (:type %) :income))
                             (map :value)
