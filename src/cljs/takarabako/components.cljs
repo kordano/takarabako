@@ -25,7 +25,7 @@
   (let [{:keys [category date value] :as local} (om/get-state component)
         {:keys [type]} (om/get-params component)]
     (html
-     [:div
+     [:div#account-input
       (create-input-field component :category category)
       (create-input-field component :date date)
       (create-input-field component :value value)
@@ -95,8 +95,13 @@
   (render [this]
     (println (-> this om/props))
     (html
-     [:div.container
+     [:div
       (create-account-input this)
-      (netvalue (om/props this))
-      (map (partial create-selector this) [:income :outcome])
-      (booking-list (om/props this))])))
+      [:div.container
+       [:div#netvalue (netvalue (om/props this))]
+       
+       [:div#booking-list
+        [:div.header
+         [:h2.header-title (-> this om/get-params :type name) ]
+         [:div#selectors (map (partial create-selector this) [:income :outcome])]]
+        (booking-list (om/props this))]]])))

@@ -1,0 +1,43 @@
+
+@font-face{
+    font-family: Roboto;
+    src: url(fonts/Roboto-Medium.ttf);
+}
+@font-face{
+    font-family: RobotoCondensed;
+    src: url(fonts/RobotoCondensed-Light.ttf);
+}
+
+:focus {outline:none;}
+::-moz-focus-inner {border:0;}
+
+$blue0 : #34869D;
+
+html,body {
+    height: 100%;
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+}
+
+h1,h2,h3,h4,th {
+    font-family: 'RobotoCondensed', sans-serif;
+}
+
+#app {
+    height: 100%;
+    width: 100%;
+}
+
+.container {
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-left: 4em;
+    
+}
+
+#account-input {
+    position: absolute;
+    background: grey;
+}
