@@ -12,6 +12,8 @@
 ::-moz-focus-inner {border:0;}
 
 $blue0 : #34869D;
+$overall-side-margin: 12em;
+$overall-top-margin: 5em;
 
 html,body {
     height: 100%;
@@ -33,11 +35,54 @@ h1,h2,h3,h4,th {
     height: 100%;
     display: flex;
     flex-direction: column;
-    margin-left: 4em;
-    
+    margin: $overall-top-margin $overall-side-margin;
 }
 
 #account-input {
     position: absolute;
-    background: grey;
+    width: $overall-side-margin;
+    top: $overall-top-margin;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid grey;
+    margin-bottom: 2em;
+    .header-title {
+        width: 5em;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+}
+
+
+#selectors{
+    display: flex;
+    flex-direction: row;
+}
+
+#bookinglist{
+    display: flex;
+    flex-direction: column;
+}
+
+.booking-table{
+    table{
+        display: table;
+        width: 100%;
+        .table-number{
+            text-align: center;
+        }
+    }
+}
+
+#netvalue {
+    display: flex;
+    justify-content: center;
 }

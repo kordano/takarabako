@@ -1,6 +1,6 @@
 (ns takarabako.core
   (:require [goog.dom :as gdom]
-            [takarabako.components :refer [Dashboard AccountInput]]
+            [takarabako.components :refer [Dashboard]]
             [takarabako.io :as io]
             [takarabako.parser :refer [read mutate]]
             [om.next :as om]))

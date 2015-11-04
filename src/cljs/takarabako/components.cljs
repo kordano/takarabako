@@ -47,7 +47,7 @@
   (render [this]
     (let [{:keys [category date value]} (om/props this)]
       (html
-       [:tr [:td date] [:td category] [:td value]]))))
+       [:tr.booking [:td category] [:td.table-number date]  [:td.table-number value]]))))
 
 (def booking (om/factory Booking))
 
@@ -58,7 +58,7 @@
       (html
        [:table
         [:thead
-         [:tr [:th "Date"] [:th "Category"] [:th "Value"]]]
+         [:tr [:th "Category"] [:th "Date"]  [:th "Value"]]]
         [:tbody (map booking selected)]]))))
 
 (def booking-list (om/factory BookingList))
@@ -99,9 +99,9 @@
       (create-account-input this)
       [:div.container
        [:div#netvalue (netvalue (om/props this))]
-       
        [:div#booking-list
         [:div.header
          [:h2.header-title (-> this om/get-params :type name) ]
          [:div#selectors (map (partial create-selector this) [:income :outcome])]]
-        (booking-list (om/props this))]]])))
+        [:div.booking-table
+         (booking-list (om/props this))]]]])))
