@@ -19,13 +19,13 @@
                 (assoc local param
                        (.. e -target -value))))}]))
 
-(defn create-account-input
+(defn create-booking-input
   "Create account input fields and add button"
   [component]
   (let [{:keys [category date value] :as local} (om/get-state component)
         {:keys [type]} (om/get-params component)]
     (html
-     [:div#account-input
+     [:div#booking-input
       (create-input-field component :category category)
       (create-input-field component :date date)
       (create-input-field component :value value)
@@ -96,7 +96,7 @@
     (println (-> this om/props))
     (html
      [:div
-      (create-account-input this)
+      (create-booking-input this)
       [:div.container
        [:div#netvalue (netvalue (om/props this))]
        [:div#booking-list

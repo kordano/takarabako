@@ -18,6 +18,8 @@ $overall-top-margin: 5em;
 html,body {
     height: 100%;
     width: 100%;
+    padding: 0;
+    margin: 0;
     font-family: 'Roboto', sans-serif;
 }
 
@@ -25,33 +27,27 @@ h1,h2,h3,h4,th {
     font-family: 'RobotoCondensed', sans-serif;
 }
 
-#app {
-    height: 100%;
-    width: 100%;
-}
-
 .container {
-    padding: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
     margin: $overall-top-margin $overall-side-margin;
 }
 
-#account-input {
+#booking-input {
     position: absolute;
     width: $overall-side-margin;
     top: $overall-top-margin;
     left: 0;
-    display: flex;
-    flex-direction: column;
+    input{
+        padding: 0;
+        width: 100%;
+        box-sizing:border-box;
+    }
+    button {
+        padding: 0;
+        width: 100%;
+    }
 }
 
 .header {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
     border-bottom: 1px solid grey;
     margin-bottom: 2em;
     .header-title {
@@ -59,17 +55,6 @@ h1,h2,h3,h4,th {
         margin-bottom: 0;
         padding-bottom: 0;
     }
-}
-
-
-#selectors{
-    display: flex;
-    flex-direction: row;
-}
-
-#bookinglist{
-    display: flex;
-    flex-direction: column;
 }
 
 .booking-table{
@@ -80,9 +65,4 @@ h1,h2,h3,h4,th {
             text-align: center;
         }
     }
-}
-
-#netvalue {
-    display: flex;
-    justify-content: center;
 }
