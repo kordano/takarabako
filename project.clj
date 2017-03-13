@@ -49,7 +49,7 @@
                ;; lein cljsbuild once min
                {:id "min"
                 :source-paths ["src/cljs"]
-                :compiler {:output-to "resources/public/js/compiled/chat42.js"
+                :compiler {:output-to "resources/public/js/compiled/takarabako.js"
                            :main takarabako.core
                            :optimizations :advanced
                            :pretty-print false}}]}
