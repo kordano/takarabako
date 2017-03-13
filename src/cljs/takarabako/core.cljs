@@ -58,8 +58,16 @@
 (defn target-val [e]
   (.. e -target -value))
 
+(def reconciler
+  (om/reconciler {:state val-atom}))
+
+(defui App
+  Object
+  (render [this]
+    (html [:h1 "Hello takarabako!"])))
+
 (defn main [& args]
-  (go-try S
+  #_(go-try S
           (def client-state (<? S (setup-replikativ)))
           (.error js/console "INITIATED")))
 

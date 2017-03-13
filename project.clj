@@ -11,10 +11,9 @@
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.229"]
-
                  [io.replikativ/replikativ "0.2.1"]
-                 [sablono "0.7.6"]
-                 [org.omcljs/om "1.0.0-alpha46" :exclusions [cljsjs/react]]]
+                 [org.omcljs/om "1.0.0-alpha46"]
+                 [sablono "0.7.6"]]
 
   :plugins [[lein-figwheel "0.5.8"]
             [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]]
@@ -39,7 +38,7 @@
 
                 :compiler {:main takarabako.core
                            :asset-path "js/compiled/out"
-                           :output-to "resources/public/js/compiled/chat42.js"
+                           :output-to "resources/public/js/compiled/takarabako.js"
                            :output-dir "resources/public/js/compiled/out"
                            :source-map-timestamp true
                            ;; To console.log CLJS data-structures make sure you enable devtools in Chrome
