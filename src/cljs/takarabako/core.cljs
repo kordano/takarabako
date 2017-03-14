@@ -21,8 +21,17 @@
 
 (enable-console-print!)
 
+
+                                        ; HELPERS
+
 (defn pprint [s & args]
   (.log js/console (apply pr-str s args)))
+
+
+(defn target-val [e]
+  (.. e -target -value))
+
+                                        ; REPLIKATIV
 
 (def stream-eval-fns
   {'assoc (fn [a new]
@@ -54,7 +63,9 @@
              :stream stream
              :peer local-peer})))
 
+
 (declare client-state)
+
 
 (defn add-transaction! [app-state tx]
   (s/assoc! (:stage client-state)
@@ -62,11 +73,21 @@
             (uuid tx)
             [['assoc tx]]))
 
-(defn target-val [e]
-  (.. e -target -value))
+                                        ; QUERIES
 
-(def reconciler
-  (om/reconciler {:state val-atom}))
+(defmulti read (fn [env key params] key))
+
+(defmethod read :default
+  [{:keys [state] :as env} key params]
+  (let [st @state]
+    (if-let [[_ value] (find st key)]
+      {:value value}
+      {:value :not-found})))
+
+
+
+
+                                        ; VIEWS
 
 (defn input-widget [component placeholder local-key type]
   [:input {:value (get (om/get-state component) local-key)
@@ -75,6 +96,7 @@
            :on-change (fn [e]
                         (om/update-state! component assoc local-key (target-val e)))}])
 
+
 (defn transactions-widget [transactions]
   [:div
    [:h3 "Transactions"]
@@ -82,46 +104,80 @@
     [:tr
      [:th "Description"]
      [:th "Date"]
+     [:th "Type"]
      [:th "Value"]]
     (mapv
-     (fn [{:keys [description value date] :as tx}]
+     (fn [{:keys [description value type date] :as tx}]
        [:tr {:key (uuid tx)}
         [:td description]
         [:td (str (js/Date. date))]
+        [:td (str type)]
         [:td value]])
      (sort-by :date > transactions))]])
+
+
+(defn transaction-add-button [component]
+  (let [app-state (om/props component)
+        {:keys [input-description input-value input-date input-type-toggle]} (om/get-state component)]
+      [:button
+       {:on-click (fn [e]
+                    (do
+                      (add-transaction!
+                       app-state
+                       {:description input-description
+                        :created (.getTime (js/Date.))
+                        :date (.getTime input-date)
+                        :type (if input-type-toggle :expense :income)
+                        :value input-value})
+                      (om/update-state! component assoc :input-value nil)
+                      (om/update-state! component assoc :input-date nil)
+                      (om/update-state! component assoc :input-type-toggle true)
+                      (om/update-state! component assoc :input-description "")))}
+       "Add"]))
+
+
+(defn type-toggle-widget [component]
+  (let [toggle-state (:input-type-toggle (om/get-state component))]
+    [:label.switch
+     [:input {:type "checkbox"
+              :checked toggle-state
+              :on-click (fn [_] (om/update-state! component update :input-type-toggle not))}]
+     (if toggle-state "Expense" "Income")]))
+
 
 (defui App
   Object
   (componentWillMount [this]
-    (om/set-state! this {:input-description "" :input-value nil}))
+    (om/set-state! this {:input-description ""
+                         :input-type-toggle true
+                         :input-date nil
+                         :input-value nil}))
   (render [this]
-    (let [app-state (om/props this)
-          {:keys [input-description input-value]} (om/get-state this)]
+    (let [app-state (om/props this)]
       (html
        [:div
-        [:h3 "New Transaction"]
-        (input-widget this "Description" :input-description :text)
-        (input-widget this "Value" :input-value :number)
-        [:button
-         {:on-click (fn [e]
-                      (do
-                        (add-transaction!
-                         app-state
-                         {:description input-description
-                          :date (.getTime (js/Date.))
-                          :value input-value})
-                        (om/update-state! this assoc :input-value nil)
-                        (om/update-state! this assoc :input-description "")))}
-         "Add"]
+        [:div
+         [:h3 "New Transaction"]
+         (input-widget this "Description" :input-description :text)
+         (input-widget this "Value" :input-value :number)
+         (input-widget this "Date" :input-date :time)
+         (type-toggle-widget this)
+         (transaction-add-button this)]
         (transactions-widget (vals (:transactions app-state)))]))))
+
 
 (defn main [& args]
   (go-try S
           (def client-state (<? S (setup-replikativ)))
           (.error js/console "INITIATED")))
 
+
+(def reconciler
+  (om/reconciler {:state val-atom}))
+
+
 (om/add-root! reconciler App (.getElementById js/document "app"))
+
 
 (comment
 
