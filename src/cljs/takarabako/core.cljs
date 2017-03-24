@@ -104,7 +104,18 @@
 (defmethod read :account/balance
   [{:keys [state] :as env} key {:keys [start-date end-date]}]
   {:value (reduce (process-tx-value mean-reducer) {:sum 0 :count 0}
-           (vals (:transactions @state)))})
+                  (vals (:transactions @state)))})
+
+(defmulti mutate om/dispatch)
+
+(defmethod mutate 'transactions/add
+  [{:keys [state]} _ tx]
+  {:action
+   (fn []
+     (s/assoc! (:stage client-state)
+               [user ormap-id]
+               (uuid tx)
+               [['assoc tx]]))})
 
                                         ; VIEWS
 
@@ -131,7 +142,7 @@
          [:td (str (.toLocaleDateString (js/Date. created)))]
          [:td description]
          [:td {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
-      (sort-by :date > transactions))]]])
+      (sort-by :created > transactions))]]])
 
 
 (defn transaction-add-button [component]
@@ -139,18 +150,16 @@
         {:keys [input-description input-value input-date input-type-toggle]} (om/get-state component)]
       [:button
        {:on-click (fn [e]
-                    (do
-                      (add-transaction!
-                       app-state
-                       {:description input-description
-                        :created (.getTime (js/Date.))
-                        ;:date #_(.getTime input-date)
-                        :type (if input-type-toggle :expense :income)
-                        :value input-value})
-                      (om/update-state! component assoc :input-value nil)
-                      #_(om/update-state! component assoc :input-date nil)
-                      (om/update-state! component assoc :input-type-toggle true)
-                      (om/update-state! component assoc :input-description "")))}
+                    (let [new-tx {:description input-description
+                                  :created (.getTime (js/Date.))
+                                        ;:date #_(.getTime input-date)
+                                  :type (if input-type-toggle :expense :income)
+                                  :value input-value}]
+                      (do
+                        (om/transact! component `[(transactions/add ~new-tx)])
+                        (om/update-state! component assoc :input-value nil)
+                        (om/update-state! component assoc :input-type-toggle true)
+                        (om/update-state! component assoc :input-description ""))))}
        "Add"]))
 
 
@@ -192,7 +201,9 @@
          #_(input-widget this "Date" :input-date :time)
          (type-toggle-widget this)
          (transaction-add-button this)]
-        (transactions-widget (if (= :not-found transactions) [] (vals transactions)))]))))
+        (transactions-widget
+         (if (= :not-found transactions) []
+             (vals transactions)))]))))
 
 
 (defn main [& args]
@@ -203,7 +214,7 @@
 
 (def reconciler
   (om/reconciler {:state val-atom
-                  :parser (om/parser {:read read})}))
+                  :parser (om/parser {:read read :mutate mutate})}))
 
 
 (om/add-root! reconciler App (.getElementById js/document "app"))
