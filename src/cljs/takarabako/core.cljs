@@ -16,7 +16,7 @@
 
 (def user "mail:alice@replikativ.io")
 (def ormap-id #uuid "7d274663-9396-4247-910b-409ae35fe98d")
-(def uri "ws://127.0.0.1:31777")
+(def uri "ws://46.101.216.210:31777")
 
 
 (enable-console-print!)
