@@ -22,4 +22,15 @@
 (comment
   (-main)
 
+  (defn mean-reducer [memo x]
+    (-> memo
+        (update-in [:sum] + x)
+        (update-in [:count] inc)))
+
+  (reduce ((map inc) mean-reducer) 
+          {:sum 0 :count 0}
+          (range 10))
+
+  (transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
+
   )

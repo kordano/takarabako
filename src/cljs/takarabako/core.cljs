@@ -84,8 +84,23 @@
       {:value value}
       {:value :not-found})))
 
+(def process-tx-value
+  (comp (remove nil?)
+        (map
+         (fn [{:keys [value type]}]
+           (if (= type :expense)
+             (* -1 value)
+             (* 1 value))))))
 
+(defn mean-reducer [memo x]
+  (-> memo
+      (update-in [:sum] + x)
+      (update-in [:count] inc)))
 
+(defmethod read :account/balance
+  [{:keys [state] :as env} key {:keys [start-date end-date]}]
+  {:value (reduce (process-tx-value mean-reducer) {:sum 0 :count 0}
+           (vals (:transactions @state)))})
 
                                         ; VIEWS
 
@@ -101,19 +116,18 @@
   [:div
    [:h3 "Transactions"]
    [:table
-    [:tr
-     [:th "Description"]
-     [:th "Date"]
-     [:th "Type"]
-     [:th "Value"]]
-    (mapv
-     (fn [{:keys [description value type date] :as tx}]
-       [:tr {:key (uuid tx)}
-        [:td description]
-        [:td (str (js/Date. date))]
-        [:td (str type)]
-        [:td value]])
-     (sort-by :date > transactions))]])
+    [:tbody
+     [:tr
+      [:th "Created"]
+      [:th "Description"]
+      [:th "Value"]]
+     (mapv
+      (fn [{:keys [description created value type date] :as tx}]
+        [:tr {:key (uuid tx)}
+         [:td (str (.toLocaleDateString (js/Date. created)))]
+         [:td description]
+         [:td {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
+      (sort-by :date > transactions))]]])
 
 
 (defn transaction-add-button [component]
@@ -126,11 +140,11 @@
                        app-state
                        {:description input-description
                         :created (.getTime (js/Date.))
-                        :date (.getTime input-date)
+                        ;:date #_(.getTime input-date)
                         :type (if input-type-toggle :expense :income)
                         :value input-value})
                       (om/update-state! component assoc :input-value nil)
-                      (om/update-state! component assoc :input-date nil)
+                      #_(om/update-state! component assoc :input-date nil)
                       (om/update-state! component assoc :input-type-toggle true)
                       (om/update-state! component assoc :input-description "")))}
        "Add"]))
@@ -146,6 +160,13 @@
 
 
 (defui App
+  static om/IQueryParams
+  (params [this]
+    {:start-date (js/Date. 2016) :end-date (js/Date. 2017)})
+  static om/IQuery
+  (query [this]
+    '[:transactions
+      (:account/balance {:start-date ?start-date :end-date ?end-date})])
   Object
   (componentWillMount [this]
     (om/set-state! this {:input-description ""
@@ -153,17 +174,22 @@
                          :input-date nil
                          :input-value nil}))
   (render [this]
-    (let [app-state (om/props this)]
+    (let [{:keys [account/balance transactions]} (om/props this)]
       (html
        [:div
         [:div
+         [:div
+          [:h3 "Overview"]
+          [:p "Balance: " (:sum balance) ]
+          [:p "Average: " (/ (:sum balance) (:count balance))]]
          [:h3 "New Transaction"]
          (input-widget this "Description" :input-description :text)
          (input-widget this "Value" :input-value :number)
-         (input-widget this "Date" :input-date :time)
+         #_(input-widget this "Date" :input-date :time)
          (type-toggle-widget this)
          (transaction-add-button this)]
-        (transactions-widget (vals (:transactions app-state)))]))))
+        
+        (transactions-widget (vals transactions))]))))
 
 
 (defn main [& args]
@@ -173,7 +199,8 @@
 
 
 (def reconciler
-  (om/reconciler {:state val-atom}))
+  (om/reconciler {:state val-atom
+                  :parser (om/parser {:read read})}))
 
 
 (om/add-root! reconciler App (.getElementById js/document "app"))
@@ -181,7 +208,32 @@
 
 (comment
 
-  (get-in @val-atom [:input])
   (vals (get-in @val-atom [:transactions]))
+
+  (def txs (vals (get-in @val-atom [:transactions])))
+
+  (def process-tx
+    (comp (remove nil?)
+          (map
+           (fn [{:keys [value type]}]
+             (if (= type :expense)
+               (* -1 value)
+               (* 1 value))))))
+
+  (reduce (process-tx mean-reducer) {:sum 0 :count 0} txs)
+
+  (transduce process-tx conj [] txs)
+
+  (defn mean-reducer [memo x]
+    (-> memo
+        (update-in [:sum] + x)
+        (update-in [:count] inc)))
+
+  (transduce
+   mean-reducer
+   {:sum 0 :count 0}
+   txs)
+
+  (transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
 
   )
