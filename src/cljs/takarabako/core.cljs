@@ -88,6 +88,17 @@
       {:value value}
       {:value :not-found})))
 
+(defmethod read :transactions/list
+  [{:keys [state]} key {:keys [sort-key compare-fn]}]
+  (let [st @state]
+    (if-let [[_ txs] (find st :transactions)]
+      (let [process-tx (comp
+                        (map (fn [[k v]] (assoc v :id k)))
+                        (map (fn [tx] (update-in tx [:value]
+                                                 #(/ % 100)))))]
+        {:value (sort-by sort-key compare-fn (transduce process-tx conj [] txs))})
+      {:value []})))
+
 (def process-tx-value
   (comp (remove nil?)
         (map
@@ -137,12 +148,14 @@
       [:th "Description"]
       [:th "Value"]]
      (mapv
-      (fn [{:keys [description created value type date] :as tx}]
-        [:tr {:key (uuid tx)}
-         [:td (str (.toLocaleDateString (js/Date. created)))]
+      (fn [{:keys [id description created value type date] :as tx}]
+        [:tr {:key id}
+         [:td (-> created
+                  js/Date.
+                  .toLocaleDateString)]
          [:td description]
          [:td {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
-      (sort-by :created > transactions))]]])
+      transactions)]]])
 
 
 (defn transaction-add-button [component]
@@ -154,7 +167,10 @@
                                   :created (.getTime (js/Date.))
                                         ;:date #_(.getTime input-date)
                                   :type (if input-type-toggle :expense :income)
-                                  :value input-value}]
+                                  :value (-> input-value
+                                             js/parseFloat
+                                             (* 100)
+                                             js/Math.round)}]
                       (do
                         (om/transact! component `[(transactions/add ~new-tx)])
                         (om/update-state! component assoc :input-value nil)
@@ -175,10 +191,10 @@
 (defui App
   static om/IQueryParams
   (params [this]
-    {:start-date (js/Date. 2016) :end-date (js/Date. 2017)})
+    {:start-date (js/Date. 2016) :end-date (js/Date. 2017) :sort-key :created :compare-fn >})
   static om/IQuery
   (query [this]
-    '[:transactions
+    '[(:transactions/list {:sort-key ?sort-key :compare-fn ?compare-fn})
       (:account/balance {:start-date ?start-date :end-date ?end-date})])
   Object
   (componentWillMount [this]
@@ -187,7 +203,7 @@
                          :input-date nil
                          :input-value nil}))
   (render [this]
-    (let [{:keys [account/balance transactions]} (om/props this)]
+    (let [{:keys [account/balance transactions/list]} (om/props this)]
       (html
        [:div
         [:div
@@ -201,9 +217,7 @@
          #_(input-widget this "Date" :input-date :time)
          (type-toggle-widget this)
          (transaction-add-button this)]
-        (transactions-widget
-         (if (= :not-found transactions) []
-             (vals transactions)))]))))
+        (transactions-widget list)]))))
 
 
 (defn main [& args]
@@ -248,6 +262,5 @@
    {:sum 0 :count 0}
    txs)
 
-  (transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
 
   )
