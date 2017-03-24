@@ -35,6 +35,4 @@
 
   (-main)
 
-  (run-server #'all-routes {:port 8088})
-
   )
