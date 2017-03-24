@@ -188,8 +188,7 @@
          #_(input-widget this "Date" :input-date :time)
          (type-toggle-widget this)
          (transaction-add-button this)]
-        
-        (transactions-widget (vals transactions))]))))
+        (transactions-widget (if (= :not-found transactions) [] (vals transactions)))]))))
 
 
 (defn main [& args]

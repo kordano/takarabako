@@ -13,7 +13,9 @@
                  [org.clojure/clojurescript "1.9.229"]
                  [io.replikativ/replikativ "0.2.1"]
                  [org.omcljs/om "1.0.0-alpha46"]
-                 [sablono "0.7.6"]]
+                 [sablono "0.7.6"]
+                 [http-kit "2.2.0"]
+                 [compojure "1.5.2"]]
 
   :plugins [[lein-figwheel "0.5.8"]
             [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]]
@@ -50,8 +52,10 @@
                {:id "min"
                 :source-paths ["src/cljs"]
                 :compiler {:output-to "resources/public/js/compiled/takarabako.js"
+                           :output-dir "resources/public/js/compiled/min"
+                           :asset-path "js/compiled/min"
                            :main takarabako.core
-                           :optimizations :advanced
+                           :optimizations :whitespace
                            :pretty-print false}}]}
 
   :figwheel {;; :http-server-root "public" ;; default and assumes "resources"

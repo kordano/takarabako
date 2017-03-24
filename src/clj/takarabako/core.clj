@@ -6,13 +6,25 @@
             [konserve.memory :refer [new-mem-store]]
 
             [superv.async :refer [<?? S]] ;; core.async error handling
-            [clojure.core.async :refer [chan] :as async]))
+            [clojure.core.async :refer [chan] :as async]
+
+            [org.httpkit.server :refer [run-server]]
+            [compojure.route :refer [resources not-found]]
+            [compojure.core :refer [defroutes]]))
 
 (def uri "ws://127.0.0.1:31777")
 
+(defroutes all-routes
+  (resources "/")
+  (not-found "<p>Page not found.</p>"))
+
 (defn -main [& args]
   (let [store (<?? S (new-mem-store))
-        peer (<?? S (server-peer S store uri))]
+        peer (<?? S (server-peer S store uri))
+        port 8088]
+    (run-server #'all-routes {:port port})
+    (println "Takarabako http server up and running!" port)
+
     (<?? S (start peer))
     (println "Takarabako replikativ server peer up and running!" uri)
     ;; HACK blocking main termination
@@ -20,17 +32,9 @@
 
 
 (comment
+
   (-main)
 
-  (defn mean-reducer [memo x]
-    (-> memo
-        (update-in [:sum] + x)
-        (update-in [:count] inc)))
-
-  (reduce ((map inc) mean-reducer) 
-          {:sum 0 :count 0}
-          (range 10))
-
-  (transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
+  (run-server #'all-routes {:port 8088})
 
   )
