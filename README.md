@@ -1,6 +1,6 @@
 # takarabako
 
-Simple accounting dashboard using replikativ and om.next. Running test instance at http://46.101.216.210:8088/index.html
+Simple accounting dashboard using replikativ and om.next. Running test instance at http://takarabako.lambdaforge.io
 
 ## Usage
 
