@@ -106,7 +106,7 @@
            (if (= type :expense)
              (* -1 value)
              (* 1 value))))
-        (map #(/ % 10))))
+        (map #(/ % 100))))
 
 (defn mean-reducer [memo x]
   (-> memo
