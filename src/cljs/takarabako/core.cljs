@@ -202,7 +202,7 @@
     (om/set-state! this {:input-description ""
                          :input-type-toggle true
                          :input-date nil
-                         :input-value nil}))
+                         :input-value ""}))
   (render [this]
     (let [{:keys [account/balance transactions/list]} (om/props this)]
       (html
