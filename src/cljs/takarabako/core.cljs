@@ -207,24 +207,25 @@
   (render [this]
     (let [{:keys [account/balance transactions/list]} (om/props this)]
       (html
-       [:div
-        [:div.base-widget
-         [:div.widget.input-widget
-          [:h3 "New Transaction"]
-          [:div.input-container
-           (input-widget this "Description" :input-description :text)
-           (input-widget this "Value" :input-value :number)
-           #_(input-widget this "Date" :input-date :time)
-           (type-toggle-widget this)]
-          (transaction-add-button this)]
-         [:div.widget.balance-widget
-          [:h3 "Overview"]
-          [:table
-           [:tbody
-            [:tr [:td "Balance"] [:td.value (:sum balance)]]
-            [:tr [:td "Transactions"] [:td.value (:count balance)]]
-            [:tr [:td "Mean"] [:td.value (:mean balance)]]]]]]
-        [:div.widget
+       [:div.main-container
+        [:div.table-container
+         [:div.base-widget
+          [:div.widget.input-widget
+           [:h3 "New Transaction"]
+           [:div.input-container
+            (input-widget this "Description" :input-description :text)
+            (input-widget this "Value" :input-value :number)
+            #_(input-widget this "Date" :input-date :time)
+            (type-toggle-widget this)]
+           (transaction-add-button this)]
+          [:div.widget.balance-widget
+           [:h3 "Overview"]
+           [:table
+            [:tbody
+             [:tr [:td.balance-key "Balance"] [:td.value (:sum balance)]]
+             [:tr [:td.balance-key "Transactions"] [:td.value (:count balance)]]
+             [:tr [:td.balance-key "Mean"] [:td.value (:mean balance)]]]]]]]
+        [:div.widget.tx-widget
          (transactions-widget list)]]))))
 
 
