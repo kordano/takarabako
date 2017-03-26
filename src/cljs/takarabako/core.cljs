@@ -115,8 +115,10 @@
 
 (defmethod read :account/balance
   [{:keys [state] :as env} key {:keys [start-date end-date]}]
-  {:value (reduce (process-tx-value mean-reducer) {:sum 0 :count 0}
-                  (vals (:transactions @state)))})
+  (let [sum-count (reduce (process-tx-value mean-reducer)
+                          {:sum 0 :count 0}
+                          (vals (:transactions @state)))]
+    {:value (assoc sum-count :mean (/ (:sum sum-count) (:count sum-count)))}))
 
 (defmulti mutate om/dispatch)
 
@@ -145,17 +147,17 @@
    [:table
     [:tbody
      [:tr
-      [:th "Created"]
+      [:th.created "Created"]
       [:th "Description"]
-      [:th "Value"]]
+      [:th.value "Value"]]
      (mapv
       (fn [{:keys [id description created value type date] :as tx}]
         [:tr {:key id}
          [:td (-> created
                   js/Date.
                   .toLocaleDateString)]
-         [:td description]
-         [:td {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
+         [:td.description description]
+         [:td.value {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
       transactions)]]])
 
 
@@ -163,7 +165,8 @@
   (let [app-state (om/props component)
         {:keys [input-description input-value input-date input-type-toggle]} (om/get-state component)]
       [:button
-       {:on-click (fn [e]
+       {:className (if input-type-toggle "add-income-button" "add-expense-button")
+        :on-click (fn [e]
                     (let [new-tx {:description input-description
                                   :created (.getTime (js/Date.))
                                         ;:date #_(.getTime input-date)
@@ -174,19 +177,17 @@
                                              js/Math.round)}]
                       (do
                         (om/transact! component `[(transactions/add ~new-tx)])
-                        (om/update-state! component assoc :input-value nil)
+                        (om/update-state! component assoc :input-value "")
                         (om/update-state! component assoc :input-type-toggle true)
                         (om/update-state! component assoc :input-description ""))))}
-       "Add"]))
+       (str "Add " (if input-type-toggle "Expense" "Income"))]))
 
 
 (defn type-toggle-widget [component]
-  (let [toggle-state (:input-type-toggle (om/get-state component))]
-    [:label.switch
-     [:input {:type "checkbox"
-              :checked toggle-state
-              :on-click (fn [_] (om/update-state! component update :input-type-toggle not))}]
-     (if toggle-state "Expense" "Income")]))
+  [:label.switch
+   [:input {:type "checkbox"
+            :checked (:input-type-toggle (om/get-state component))
+            :on-click (fn [_] (om/update-state! component update :input-type-toggle not))}]])
 
 
 (defui App
@@ -207,18 +208,24 @@
     (let [{:keys [account/balance transactions/list]} (om/props this)]
       (html
        [:div
-        [:div
-         [:div
+        [:div.base-widget
+         [:div.widget.input-widget
+          [:h3 "New Transaction"]
+          [:div.input-container
+           (input-widget this "Description" :input-description :text)
+           (input-widget this "Value" :input-value :number)
+           #_(input-widget this "Date" :input-date :time)
+           (type-toggle-widget this)]
+          (transaction-add-button this)]
+         [:div.widget.balance-widget
           [:h3 "Overview"]
-          [:p "Balance: " (:sum balance) ]
-          [:p "Average: " (/ (:sum balance) (:count balance))]]
-         [:h3 "New Transaction"]
-         (input-widget this "Description" :input-description :text)
-         (input-widget this "Value" :input-value :number)
-         #_(input-widget this "Date" :input-date :time)
-         (type-toggle-widget this)
-         (transaction-add-button this)]
-        (transactions-widget list)]))))
+          [:table
+           [:tbody
+            [:tr [:td "Balance"] [:td.value (:sum balance)]]
+            [:tr [:td "Transactions"] [:td.value (:count balance)]]
+            [:tr [:td "Mean"] [:td.value (:mean balance)]]]]]]
+        [:div.widget
+         (transactions-widget list)]]))))
 
 
 (defn main [& args]
@@ -238,30 +245,5 @@
 (comment
 
   (vals (get-in @val-atom [:transactions]))
-
-  (def txs (vals (get-in @val-atom [:transactions])))
-
-  (def process-tx
-    (comp (remove nil?)
-          (map
-           (fn [{:keys [value type]}]
-             (if (= type :expense)
-               (* -1 value)
-               (* 1 value))))))
-
-  (reduce (process-tx mean-reducer) {:sum 0 :count 0} txs)
-
-  (transduce process-tx conj [] txs)
-
-  (defn mean-reducer [memo x]
-    (-> memo
-        (update-in [:sum] + x)
-        (update-in [:count] inc)))
-
-  (transduce
-   mean-reducer
-   {:sum 0 :count 0}
-   txs)
-
 
   )

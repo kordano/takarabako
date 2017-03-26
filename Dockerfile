@@ -34,7 +34,7 @@ COPY test /usr/src/app/test
 COPY resources /usr/src/app/resources
 
 RUN lein cljsbuild once min
-
+RUN lein sass once
 RUN lein deps
 
 CMD ["lein", "run"]
