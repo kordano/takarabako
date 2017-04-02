@@ -203,6 +203,15 @@
             :checked (:input-type-toggle (om/get-state component))
             :on-click (fn [_] (om/update-state! component update :input-type-toggle not))}]])
 
+(defn draw-charts [component]
+  (let [{:keys [account/balance]} (om/props component)
+        daily-data (clj->js {:labels ["mo" "di" "mi" "do" "fr"] 
+                             :series [[0 5 11 2 8]]})
+        total-data (clj->js {:labels ["income" "expense"] 
+                             :series [[(:total-income balance) (:total-expense balance)]]})]
+    (js/Chartist.Line. ".ct-line" daily-data)
+    (js/Chartist.Bar. ".ct-bar" total-data)))
+
 (defui App
   static om/IQueryParams
   (params [this]
@@ -219,13 +228,10 @@
                          :input-value ""
                          :input-search ""}))
   (componentDidMount [this]
-    (let [{:keys [account/balance]} (om/props this)
-          daily-data (clj->js {:labels ["mo" "di" "mi" "do" "fr"] 
-                    :series [[0 5 11 2 8]]})
-          total-data (clj->js {:labels ["income" "expense"] 
-                         :series [[(:total-income balance) (:total-expense balance)]]})]
-      (js/Chartist.Line. ".ct-line" daily-data)
-      (js/Chartist.Bar. ".ct-bar" total-data)))
+    (draw-charts this))
+  (componentDidUpdate
+   [this prev-props prev-state]
+   (draw-charts this))
   (render [this]
     (let [{:keys [account/balance transactions/list]} (om/props this)]
       (html
