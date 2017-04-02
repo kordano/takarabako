@@ -215,7 +215,11 @@
 (defui App
   static om/IQueryParams
   (params [this]
-    {:start-date (js/Date. 2016) :end-date (js/Date. 2017) :sort-key :created :compare-fn > :filter-fn (fn [tx] (not= (:description tx) ""))})
+    {:start-date (js/Date. 2016)
+     :end-date (js/Date. 2017)
+     :sort-key :created
+     :compare-fn >
+     :filter-fn (fn [tx] (not= (:description tx) ""))})
   static om/IQuery
   (query [this]
     '[(:transactions/list {:sort-key ?sort-key :compare-fn ?compare-fn :filter-fn ?filter-fn})
