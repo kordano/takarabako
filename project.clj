@@ -15,6 +15,7 @@
                  [org.omcljs/om "1.0.0-alpha46"]
                  [sablono "0.7.6"]
                  [http-kit "2.2.0"]
+                 [cljsjs/chartist "0.10.1-0"]
                  [compojure "1.5.2"]]
 
   :plugins [[lein-figwheel "0.5.8"]
@@ -22,7 +23,7 @@
             [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]]
 
   :sass {:src "resources/app/stylesheets"
-         :dst "resources/public/"}
+         :dst "resources/public/css/"}
   :hooks [leiningen.sass]
 
   :source-paths ["src/cljs" "src/clj"]

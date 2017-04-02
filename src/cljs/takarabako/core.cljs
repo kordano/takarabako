@@ -9,7 +9,8 @@
             [superv.async :refer [S] :as sasync]
             [om.next :as om :refer-macros [defui] :include-macros true]
             [om.dom :as dom :include-macros true]
-            [sablono.core :as html :refer-macros [html]])
+            [sablono.core :as html :refer-macros [html]]
+            [cljsjs.chartist])
   (:require-macros [superv.async :refer [go-try <? go-loop-try]]
                    [cljs.core.async.macros :refer [go-loop]]))
 
@@ -89,13 +90,14 @@
       {:value :not-found})))
 
 (defmethod read :transactions/list
-  [{:keys [state]} key {:keys [sort-key compare-fn]}]
+  [{:keys [state]} key {:keys [sort-key compare-fn filter-fn]}]
   (let [st @state]
     (if-let [[_ txs] (find st :transactions)]
       (let [process-tx (comp
                         (map (fn [[k v]] (assoc v :id k)))
                         (map (fn [tx] (update-in tx [:value]
-                                                 #(/ % 100)))))]
+                                                 #(/ % 100))))
+                        (filter filter-fn))]
         {:value (sort-by sort-key compare-fn (transduce process-tx conj [] txs))})
       {:value []})))
 
@@ -111,6 +113,8 @@
 (defn mean-reducer [memo x]
   (-> memo
       (update-in [:sum] + x)
+      (update-in [:total-income] (fn [te] (if (pos? x) (+ x te) te)))
+      (update-in [:total-expense] (fn [ti] (if (neg? x) (+ (* -1 x) ti) ti)))
       (update-in [:count] inc)))
 
 (defmethod read :account/balance
@@ -142,23 +146,21 @@
 
 
 (defn transactions-widget [transactions]
-  [:div
-   [:h3 "Transactions"]
-   [:table
-    [:tbody
-     [:tr
-      [:th.created "Created"]
-      [:th "Description"]
-      [:th.value "Value"]]
-     (mapv
-      (fn [{:keys [id description created value type date] :as tx}]
-        [:tr {:key id}
-         [:td (-> created
-                  js/Date.
-                  .toLocaleDateString)]
-         [:td.description description]
-         [:td.value {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
-      transactions)]]])
+  [:table
+   [:tbody
+    [:tr
+     [:th.created "Created"]
+     [:th "Description"]
+     [:th.value "Value"]]
+    (mapv
+     (fn [{:keys [id description created value type date] :as tx}]
+       [:tr {:key id}
+        [:td (-> created
+                 js/Date.
+                 .toLocaleDateString)]
+        [:td.description description]
+        [:td.value {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
+     transactions)]])
 
 
 (defn transaction-add-button [component]
@@ -182,6 +184,18 @@
                         (om/update-state! component assoc :input-description ""))))}
        (str "Add " (if input-type-toggle "Expense" "Income"))]))
 
+(defn transaction-search-button [component]
+  (let [app-sate (om/props component)
+        {:keys [input-search]} (om/get-state component)]
+    [:button
+     {:on-click (fn [_]
+                  (om/update-query! component (fn [{:keys [query params] :as q}]
+                                                (assoc-in q
+                                                          [:params :filter-fn]
+                                                          (if (= input-search "")
+                                                            (fn [tx] (not= (:description tx) ""))
+                                                            (fn [tx] (re-find (re-pattern input-search) (:description tx))))))))}
+     "Search!"]))
 
 (defn type-toggle-widget [component]
   [:label.switch
@@ -189,21 +203,29 @@
             :checked (:input-type-toggle (om/get-state component))
             :on-click (fn [_] (om/update-state! component update :input-type-toggle not))}]])
 
-
 (defui App
   static om/IQueryParams
   (params [this]
-    {:start-date (js/Date. 2016) :end-date (js/Date. 2017) :sort-key :created :compare-fn >})
+    {:start-date (js/Date. 2016) :end-date (js/Date. 2017) :sort-key :created :compare-fn > :filter-fn (fn [tx] (not= (:description tx) ""))})
   static om/IQuery
   (query [this]
-    '[(:transactions/list {:sort-key ?sort-key :compare-fn ?compare-fn})
+    '[(:transactions/list {:sort-key ?sort-key :compare-fn ?compare-fn :filter-fn ?filter-fn})
       (:account/balance {:start-date ?start-date :end-date ?end-date})])
   Object
   (componentWillMount [this]
     (om/set-state! this {:input-description ""
                          :input-type-toggle true
                          :input-date nil
-                         :input-value ""}))
+                         :input-value ""
+                         :input-search ""}))
+  (componentDidMount [this]
+    (let [{:keys [account/balance]} (om/props this)
+          daily-data (clj->js {:labels ["mo" "di" "mi" "do" "fr"] 
+                    :series [[0 5 11 2 8]]})
+          total-data (clj->js {:labels ["income" "expense"] 
+                         :series [[(:total-income balance) (:total-expense balance)]]})]
+      (js/Chartist.Line. ".ct-line" daily-data)
+      (js/Chartist.Bar. ".ct-bar" total-data)))
   (render [this]
     (let [{:keys [account/balance transactions/list]} (om/props this)]
       (html
@@ -224,9 +246,21 @@
             [:tbody
              [:tr [:td.balance-key "Balance"] [:td.value (:sum balance)]]
              [:tr [:td.balance-key "Transactions"] [:td.value (:count balance)]]
-             [:tr [:td.balance-key "Mean"] [:td.value (:mean balance)]]]]]]]
+             [:tr [:td.balance-key "Mean"] [:td.value (:mean balance)]]]]]]
+         [:div.base-widget
+          [:div.widget.chart-widget
+           [:h3 "Daily"]
+           [:div.ct-line]]
+          [:div.widget.chart-widget
+           [:h3 "Total"]
+           [:div.ct-bar]]]]
         [:div.widget.tx-widget
-         (transactions-widget list)]]))))
+         [:div
+          [:h3 "Transactions"]
+          [:div
+           (input-widget this "Search" :input-search :text)
+           (transaction-search-button this)]
+          (transactions-widget list)]]]))))
 
 
 (defn main [& args]
