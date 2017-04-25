@@ -216,8 +216,8 @@
 
 (defn draw-charts [component]
   (let [{:keys [account/balance]} (om/props component)
-        daily-data (clj->js {:labels ["mo" "di" "mi" "do" "fr"] 
-                             :series [[0 5 11 2 8]]})
+        daily-data (clj->js {:labels ["mon" "tues" "wed" "thurs" "fri" "sat" "sun"] 
+                             :series [[0 5 11 2 8 6 15]]})
         total-data (clj->js {:labels ["income" "expense"] 
                              :series [[(:total-income balance) (:total-expense balance)]]})]
     (js/Chartist.Line. ".ct-line" daily-data)
@@ -267,10 +267,14 @@
             [:tbody
              [:tr [:td.balance-key "Balance"] [:td.value (.toFixed (:sum balance) 2)]]
              [:tr [:td.balance-key "Transactions"] [:td.value (:count balance)]]
-             [:tr [:td.balance-key "Mean"] [:td.value (.toFixed (:mean balance) 2)]]]]]]]
-        [:div.widget.chart-widget
-         [:h3 "Total"]
-         [:div.ct-bar]]
+             [:tr [:td.balance-key "Mean"] [:td.value (.toFixed (:mean balance) 2)]]]]]]
+         [:div.base-widget
+          [:div.widget.chart-widget
+           [:h3 "Last Week"]
+           [:div.ct-line]]
+          [:div.widget.chart-widget
+           [:h3 "Total"]
+           [:div.ct-bar]]]]
         [:div.widget.tx-widget
          [:div
           [:h3 "Transactions"]
