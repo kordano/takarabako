@@ -59,6 +59,15 @@ h1, h2, h3, h4, h5 {
     font-family: 'Oswald', sans-serif;
 }
 
+button {
+    display: inline-block;
+    border: none;
+    padding: 8px 24px;
+    text-align: center;
+    text-decoration: none;
+    border: 1px solid $primary-color;
+}
+
 .main-container {
     margin: 0 auto;
     border-collapse:separate;
@@ -182,3 +191,18 @@ h1, h2, h3, h4, h5 {
 .chart-widget {
     display: table-cell
 };
+
+.big-button {
+    width: 100%;
+
+}
+
+.add-income-button {
+    color: white;
+    background-color: #4caf50;
+}
+
+.add-expense-button {
+    color: white;
+    background: red;
+}

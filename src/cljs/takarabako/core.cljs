@@ -92,37 +92,42 @@
 (defmethod read :transactions/list
   [{:keys [state]} key {:keys [sort-key compare-fn filter-fn]}]
   (let [st @state]
-    (if-let [[_ txs] (find st :transactions)]
-      (let [process-tx (comp
-                        (map (fn [[k v]] (assoc v :id k)))
-                        (map (fn [tx] (update-in tx [:value]
-                                                 #(/ % 100))))
-                        (filter filter-fn))]
-        {:value (sort-by sort-key compare-fn (transduce process-tx conj [] txs))})
-      {:value []})))
+  (if-let [[_ txs] (find st :transactions)]
+    (let [process-tx (comp
+                      (map (fn [[k v]] (assoc v :id k)))
+                      (map (fn [tx] (update-in tx [:value]
+                                                #(/ % 100))))
+                      (filter filter-fn))]
+      {:value (sort-by sort-key compare-fn (transduce process-tx conj [] txs))})
+    {:value []})))
+
 
 (def process-tx-value
-  (comp (remove nil?)
-        (map
-         (fn [{:keys [value type]}]
-           (if (= type :expense)
-             (* -1 value)
-             (* 1 value))))
-        (map #(/ % 100))))
+(comp (remove nil?)
+      (map
+        (fn [{:keys [value type]}]
+          (if (= type :expense)
+            (* -1 value)
+            (* 1 value))))
+      (map #(/ % 100))))
 
 (defn mean-reducer [memo x]
-  (-> memo
-      (update-in [:sum] + x)
-      (update-in [:total-income] (fn [te] (if (pos? x) (+ x te) te)))
-      (update-in [:total-expense] (fn [ti] (if (neg? x) (+ (* -1 x) ti) ti)))
-      (update-in [:count] inc)))
+(-> memo
+    (update-in [:sum] + x)
+    (update-in [:total-income] (fn [te] (if (pos? x) (+ x te) te)))
+    (update-in [:total-expense] (fn [ti] (if (neg? x) (+ (* -1 x) ti) ti)))
+    (update-in [:count] inc)))
 
 (defmethod read :account/balance
-  [{:keys [state] :as env} key {:keys [start-date end-date]}]
-  (let [sum-count (reduce (process-tx-value mean-reducer)
-                          {:sum 0 :count 0}
-                          (vals (:transactions @state)))]
-    {:value (assoc sum-count :mean (/ (:sum sum-count) (:count sum-count)))}))
+[{:keys [state] :as env} key {:keys [start-date end-date]}]
+(let [sum-count (reduce (process-tx-value mean-reducer)
+                        {:sum 0 :count 0}
+                        (vals (:transactions @state)))]
+  {:value (assoc sum-count :mean (/ (:sum sum-count) (:count sum-count)))}))
+
+(defmethod read :account/history
+[{:keys [state]} key {:keys [start-date end-date]}]
+)
 
 (defmulti mutate om/dispatch)
 
@@ -162,12 +167,19 @@
         [:td.value {:style {:color (if (= type :expense) "#F00" "#0F0")}} value]])
      transactions)]])
 
+(defn input-not-valid? [{:keys [input-value input-description]}]
+  )
 
 (defn transaction-add-button [component]
   (let [app-state (om/props component)
-        {:keys [input-description input-value input-date input-type-toggle]} (om/get-state component)]
+        {:keys [input-description input-value input-date input-type-toggle] :as input} (om/get-state component)
+        input-not-valid? (or (empty? input-description)
+                             (empty? input-value)
+                             (js/isNaN input-value))]
       [:button
-       {:className (if input-type-toggle "add-income-button" "add-expense-button")
+       {:className (str "big-button " (when (not input-not-valid?)
+                                        (if input-type-toggle "add-income-button" "add-expense-button")) )
+        :disabled input-not-valid?
         :on-click (fn [e]
                     (let [new-tx {:description input-description
                                   :created (.getTime (js/Date.))
@@ -198,10 +210,9 @@
      "Search!"]))
 
 (defn type-toggle-widget [component]
-  [:label.switch
-   [:input {:type "checkbox"
-            :checked (:input-type-toggle (om/get-state component))
-            :on-click (fn [_] (om/update-state! component update :input-type-toggle not))}]])
+  [:button.big-button
+   {:on-click (fn [_] (om/update-state! component update :input-type-toggle not))}
+   "Toggle Transaction Type"])
 
 (defn draw-charts [component]
   (let [{:keys [account/balance]} (om/props component)
@@ -246,7 +257,7 @@
            [:h3 "New Transaction"]
            [:div.input-container
             (input-widget this "Description" :input-description :text)
-            (input-widget this "Value" :input-value :number)
+            (input-widget this "Value" :input-value :text)
             #_(input-widget this "Date" :input-date :time)
             (type-toggle-widget this)]
            (transaction-add-button this)]
