@@ -178,7 +178,7 @@
                              (js/isNaN input-value))]
       [:button
        {:className (str "big-button " (when (not input-not-valid?)
-                                        (if input-type-toggle "add-income-button" "add-expense-button")) )
+                                        (if input-type-toggle "add-expense-button" "add-income-button")) )
         :disabled input-not-valid?
         :on-click (fn [e]
                     (let [new-tx {:description input-description
@@ -265,9 +265,9 @@
            [:h3 "Overview"]
            [:table
             [:tbody
-             [:tr [:td.balance-key "Balance"] [:td.value (:sum balance)]]
+             [:tr [:td.balance-key "Balance"] [:td.value (.toFixed (:sum balance) 2)]]
              [:tr [:td.balance-key "Transactions"] [:td.value (:count balance)]]
-             [:tr [:td.balance-key "Mean"] [:td.value (:mean balance)]]]]]]
+             [:tr [:td.balance-key "Mean"] [:td.value (.toFixed (:mean balance) 2)]]]]]]
          [:div.base-widget
           [:div.widget.chart-widget
            [:h3 "Daily"]
