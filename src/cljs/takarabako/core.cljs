@@ -267,14 +267,10 @@
             [:tbody
              [:tr [:td.balance-key "Balance"] [:td.value (.toFixed (:sum balance) 2)]]
              [:tr [:td.balance-key "Transactions"] [:td.value (:count balance)]]
-             [:tr [:td.balance-key "Mean"] [:td.value (.toFixed (:mean balance) 2)]]]]]]
-         [:div.base-widget
-          [:div.widget.chart-widget
-           [:h3 "Daily"]
-           [:div.ct-line]]
-          [:div.widget.chart-widget
-           [:h3 "Total"]
-           [:div.ct-bar]]]]
+             [:tr [:td.balance-key "Mean"] [:td.value (.toFixed (:mean balance) 2)]]]]]]]
+        [:div.widget.chart-widget
+         [:h3 "Total"]
+         [:div.ct-bar]]
         [:div.widget.tx-widget
          [:div
           [:h3 "Transactions"]
